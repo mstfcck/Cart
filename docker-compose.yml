@@ -1,0 +1,55 @@
+services:
+  # cart-api:
+  #   container_name: cart-api
+  #   build:
+  #     context: .
+  #     dockerfile: ./source/Cart.Api/Dockerfile
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   networks:
+  #     - cart-api
+  #   depends_on:
+  #     - redis
+  redis:
+    image: redis:alpine
+    container_name: redis
+    command: redis-server --appendonly yes
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - cart-api
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+    ports:
+      - 9200:9200
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+      - xpack.monitoring.enabled=true
+      - xpack.watcher.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    networks:
+      - cart-api
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.9.2
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://localhost:9200
+    networks:
+      - cart-api
+networks:
+  cart-api:
+    driver: bridge
+volumes:
+  redis-data:
+  elasticsearch-data:
